@@ -1,0 +1,4 @@
+aug_files/*
+intermediate_aug_files/*
+
+!/**/.gitkeep
