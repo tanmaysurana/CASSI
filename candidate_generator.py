@@ -12,19 +12,19 @@ class CandidateGenerator:
     """
     Steps to add a dependency parser:
     (1) Define another method like `get_spacy_subtrees` in this class. Additional arguments for the parser can be passed in using `kwargs`.
-        The method should use `self.dataset`, and return indices of subtrees of all sentences in a list in the following format: 
+        The method should use `self.dataset`, and return indices of subtrees of all sentences in a list in the following format:
         ->  [{'subj_subtrees': [(subtree_start, subtree_end), ...], 'obj_subtrees': [(subtree_start, subtree_end), ...]}]
-        where each entry in the list is a collection of 'subj_subtrees'+'obj_subtrees' of sentence 
+        where each entry in the list is a collection of 'subj_subtrees'+'obj_subtrees' of sentence
     (2) Add the call to your subtree generation function in the if/else in __call__()
     """
-    
+
     def __init__(
-            self, 
-            dataset, 
-            parser, 
-            num_augs, 
-            sentence_selector, 
-            sent_filter_len, 
+            self,
+            dataset,
+            parser,
+            num_augs,
+            sentence_selector,
+            sent_filter_len,
             **kwargs
         ):
         self.dataset = dataset
@@ -53,7 +53,7 @@ class CandidateGenerator:
                     if (i+1) == len(sent['tags']):
                         self.tag_dict[tag_type].append(entity)
                         tag_type = None
-                        entity = None    
+                        entity = None
                 elif tag == 'O':
                     if entity is not None and tag_type is not None:
                         self.tag_dict[tag_type].append(entity)
@@ -76,7 +76,7 @@ class CandidateGenerator:
 
         print("Parsing Sentences...")
         docs = [nlp(Doc(nlp.vocab, d['tokens'])) for d in tqdm(self.dataset)]
-        
+
         print("Generating Subtrees...")
         subtrees = []
         for doc in tqdm(docs):
@@ -120,37 +120,37 @@ class CandidateGenerator:
         subtrees_2 = self.subtrees[ix_2]
         cands = []
         for p1 in subtrees_1['subj_subtrees']:
-            for p2 in subtrees_2['subj_subtrees']:            
+            for p2 in subtrees_2['subj_subtrees']:
                 cands.append({
                     'tokens': sent1['tokens'][:p1[0]] + sent2['tokens'][p2[0]:p2[1]] + sent1['tokens'][p1[1]:],
                     'tags': self.fix_iob_tags(sent1['tags'][:p1[0]] + sent2['tags'][p2[0]:p2[1]] + sent1['tags'][p1[1]:]),
                 })
-        
+
         for p1 in subtrees_1['obj_subtrees']:
             for p2 in subtrees_2['obj_subtrees']:
                 cands.append({
                     'tokens': sent1['tokens'][:p1[0]] + sent2['tokens'][p2[0]:p2[1]] + sent1['tokens'][p1[1]:],
                     'tags': self.fix_iob_tags(sent1['tags'][:p1[0]] + sent2['tags'][p2[0]:p2[1]] + sent1['tags'][p1[1]:]),
                 })
-        
+
         for p1 in subtrees_2['subj_subtrees']:
             for p2 in subtrees_1['subj_subtrees']:
                 cands.append({
                     'tokens': sent2['tokens'][:p1[0]] + sent1['tokens'][p2[0]:p2[1]] + sent2['tokens'][p1[1]:],
                     'tags': self.fix_iob_tags(sent2['tags'][:p1[0]] + sent1['tags'][p2[0]:p2[1]] + sent2['tags'][p1[1]:]),
                 })
-        
+
         for p1 in subtrees_2['obj_subtrees']:
             for p2 in subtrees_1['obj_subtrees']:
                 cands.append({
                     'tokens': sent2['tokens'][:p1[0]] + sent1['tokens'][p2[0]:p2[1]] + sent2['tokens'][p1[1]:],
                     'tags': self.fix_iob_tags(sent2['tags'][:p1[0]] + sent1['tags'][p2[0]:p2[1]] + sent2['tags'][p1[1]:]),
                 })
-    
+
         return cands
 
 
-    def get_other_aug(self, ix): 
+    def get_other_aug(self, ix):
         tokens = []
         ner_tags = []
         for i, tag in enumerate(self.dataset[ix]['tags']):
@@ -175,24 +175,34 @@ class CandidateGenerator:
                 others.append(i)
             else:
                 sents.append(i)
-        
+
         assert 0 < self.num_augs < len(sents), "Number of augmentations must be smaller than the number of sentences where augmentation can be applied"
 
         # get ranked sentences
-        selected_sents = self.sentence_selector(sentences=[self.dataset[i]['tokens'] for i in sents])
+        ordered_sents = self.sentence_selector(sentences=[self.dataset[i]['tokens'] for i in sents])
+        selected_sents = []
         # perform sent replacement
         candidates = []
-        for i, selected_ix in enumerate(selected_sents):
-            for ix in selected_ix:
+        for i, selected_ix in enumerate(ordered_sents):
+            selected_sents.append([])
+            for j, ix in enumerate(selected_ix):
+                if j < i and i in selected_sents[j]: continue
                 cands = self.get_subtree_swaps(sents[i], sents[ix])
+                _cands = []
                 for cand in cands:
                     if len(cand['tokens']) <= self.sent_filter_len: continue
-                    candidates.append({
+                    _cands.append({
                         'Sent1_Id': sents[i],
                         'Sent2_Id': sents[ix],
                         'tokens': cand['tokens'],
                         'tags': cand['tags']
                     })
+                if len(_cands) > 0:
+                    candidates.extend(_cands)
+                    selected_sents[i].append(ix)
+                    if len(selected_sents[i]) == self.num_augs: break
+
+        assert len({len(s) for s in selected_sents}) == 1, "Number of augmentations is too high to generate equal number of augmentations for all sentences"
 
         # perform other replacement
         other_augs = []
@@ -204,7 +214,7 @@ class CandidateGenerator:
                     'tokens': aug['tokens'],
                     'tags': aug['tags']
                 })
-        
+
         return candidates, other_augs
 
 
@@ -230,13 +240,13 @@ if __name__ == '__main__':
 
     # general arguments
     parser.add_argument(
-        '--input_file', 
-        type=str, 
+        '--input_file',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--output_base_name', 
-        type=str, 
+        '--output_base_name',
+        type=str,
         required=True
     )
     parser.add_argument(
@@ -246,13 +256,13 @@ if __name__ == '__main__':
         default='utf-8'
     )
     parser.add_argument(
-        '--lang', 
-        type=str, 
+        '--lang',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--num_augs', 
-        type=int, 
+        '--num_augs',
+        type=int,
         required=True
     )
     parser.add_argument(
@@ -265,20 +275,20 @@ if __name__ == '__main__':
 
     # Sentence Selector specific arguments
     parser.add_argument(
-        '--sentence_selector', 
-        type=str, 
+        '--sentence_selector',
+        type=str,
         required=False,
         default='bertscore'
     )
     parser.add_argument(
-        '--selector_model', 
-        type=str, 
+        '--selector_model',
+        type=str,
         required=False,
         default='xlm-roberta-base'
     )
     parser.add_argument(
-        '--selector_batch_size', 
-        type=int, 
+        '--selector_batch_size',
+        type=int,
         required=False,
         default=512
     )
@@ -291,8 +301,8 @@ if __name__ == '__main__':
         required=True
     )
     parser.add_argument(
-        '--sent_filter_len', 
-        type=int, 
+        '--sent_filter_len',
+        type=int,
         required=False,
         default=5
     )
@@ -314,9 +324,9 @@ if __name__ == '__main__':
 
     # 2. get candidates
     candidates, other_augs = CandidateGenerator(
-        dataset=dataset, 
-        parser=args.parser, 
-        num_augs=args.num_augs, 
+        dataset=dataset,
+        parser=args.parser,
+        num_augs=args.num_augs,
         sentence_selector=sent_selector,
         sent_filter_len=args.sent_filter_len
     )()
@@ -326,5 +336,5 @@ if __name__ == '__main__':
         open(Path('intermediate_aug_files') / f"others_{args.output_base_name}.pkl", "wb") as f_others:
         pickle.dump(candidates, f_cands)
         pickle.dump(other_augs, f_others)
-    
+
     print('Stored Candidates.')

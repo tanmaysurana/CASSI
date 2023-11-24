@@ -6,7 +6,7 @@ This is the code for our paper "CASSI: Contextual and Semantic Structure-based I
 
 ```bash
 # SpaCy
-pip install spacy[cuda111] # replace with your cuda version/cpu version
+pip install spacy[cuda111] # replace with your cuda version or use cpu version
 python -m spacy download en_core_web_trf # spacy pipeline to be used (https://spacy.io/usage)
 
 # BERTScore
@@ -23,6 +23,9 @@ pip install git+https://github.com/awslabs/mlm-scoring.git
 ```
 
 ## Usage
+
+### Generating Augmentations
+
 ```bash
 # Step 1: Candidate Generation
 
@@ -30,7 +33,7 @@ python candidate_generator.py \
     --input_file <input_file_path> \ # dataset path
     --output_base_name <output_base_name> \ # base name used by generated files
     --lang en \
-    --num_augs 10 \
+    --num_augs 10 \ # number of augmentations per sentence. NOTE: all files up to num_augs are generated at once
     --parser en_core_web_trf # spacy pipeline or custom parser name
     # --device cuda \
     # --sentence_selector bertscore \ "random" for random selection
@@ -57,9 +60,11 @@ python candidate_filter.py \
     # --no_jscore # to select sentences using best lm score
 
 ```
-_Note_: Custom dependency parsers and sentence selection methods can be added by following the instructions in `candidate_generator.py` and `sentence_selector.py` respectively. 
+_**NOTE**_: Custom dependency parsers and sentence selection methods can be added by following the instructions in `candidate_generator.py` and `sentence_selector.py` respectively. 
 
-The above files accept the dataset in the two-column format (separated by tabs):
+
+### Dataset Format 
+The files above accept the dataset in the two-column format (separated by tabs):
 ```
 BEIJING B-LOC
 1996-08-22      O
@@ -78,9 +83,17 @@ of      O
 the     O
 talks   O
 ```
-<!-- ## Citation
-Please cite our paper if you found this repository useful.
+
+## Citation
+Please cite our paper as follows if you found this repository useful:
 
 ```
-
-``` -->
+@inproceedings{
+surana2023cassi,
+title={{CASSI}: Contextual and Semantic Structure-based Interpolation Augmentation for Low-Resource {NER}},
+author={Surana, Tanmay and Nga, Ho Thi and Tun, Kyaw Zin and Chng, Eng Siong},
+booktitle={Findings of the Association for Computational Linguistics: EMNLP 2023},
+year={2023},
+url={https://openreview.net/forum?id=OwxjgsX68V}
+}
+```

@@ -10,7 +10,7 @@ class CandidateFilter:
 
     def __init__(
             self,
-            dataset, 
+            dataset,
             candidates,
             lang,
             scoring_lib,
@@ -55,11 +55,11 @@ class CandidateFilter:
             lm_scorer = MLMScorer(model, vocab, tokenizer, ctxs)
         else:
             lm_scorer = MLMScorerPT(model, vocab, tokenizer, ctxs)
-        
+
         lm_scores = lm_scorer.score_sentences(sents, split_size=self.batch_size)
 
         return lm_scores
-    
+
 
     def mlm_score_minicons(self, sents, pll_metric):
         from minicons import scorer
@@ -70,8 +70,8 @@ class CandidateFilter:
         lm_scores = []
         for batch in tqdm(batches):
             batch_scores = lm_scorer.sequence_score(
-                list(batch), 
-                reduction = lambda x: x.sum(0).item(), 
+                list(batch),
+                reduction = lambda x: x.sum(0).item(),
                 PLL_metric=pll_metric
             )
             lm_scores.extend(batch_scores)
@@ -80,12 +80,11 @@ class CandidateFilter:
 
     def candidate_filter(self):
         cand_df = self.candidates.groupby(['Sent1_Id', 'Sent2_Id'], sort=False).agg(list).reset_index()
-
         augs = []
         for _, row in cand_df.iterrows():
             scored_cands = list(zip(
-                row['lm_score'], 
-                row['tokens'], 
+                row['lm_score'],
+                row['tokens'],
                 row['tags']
             ))
 
@@ -117,7 +116,7 @@ class CandidateFilter:
                     'tokens': aug[1],
                     'tags': aug[2],
                 })
-        
+
         return augs
 
 
@@ -136,14 +135,14 @@ class CandidateFilter:
             if not self.no_len_norm:
                 cand_lens = np.array([len(list(remove_punctuation_tokens(cand))) for cand in cands])
                 lm_scores = np.array(lm_scores) / cand_lens
-            
+
             self.candidates['lm_score'] = lm_scores
-        
+
         augs = self.candidate_filter()
 
         return augs, self.candidates.to_dict(orient='records')
-        
-                
+
+
 
 if __name__ == '__main__':
     import argparse
@@ -151,22 +150,22 @@ if __name__ == '__main__':
     import pickle
 
     from utils import get_dataset, write_aug_files
-    
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input_file', 
-        type=str, 
+        '--input_file',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--candidates_file', 
-        type=str, 
+        '--candidates_file',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--others_file', 
-        type=str, 
+        '--others_file',
+        type=str,
         required=True
     )
     parser.add_argument(
@@ -176,18 +175,18 @@ if __name__ == '__main__':
         default='utf-8'
     )
     parser.add_argument(
-        '--output_base_name', 
-        type=str, 
+        '--output_base_name',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--lang', 
-        type=str, 
+        '--lang',
+        type=str,
         required=True
     )
     parser.add_argument(
-        '--num_augs', 
-        type=int, 
+        '--num_augs',
+        type=int,
         required=True
     )
     parser.add_argument(
@@ -269,6 +268,9 @@ if __name__ == '__main__':
     # write aug files
     with open(args.others_file, "rb") as f_others:
         other_augs = pickle.load(f_others, encoding=args.encoding)
+
+    assert len(sent_augs) + len(other_augs) == args.num_augs * len(dataset)
+
     write_aug_files(
         base_name=args.output_base_name,
         num_augs=args.num_augs,
@@ -278,4 +280,4 @@ if __name__ == '__main__':
         encoding=args.encoding
     )
 
-
+    print("Stored Augmentations.")
