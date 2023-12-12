@@ -88,12 +88,22 @@ talks   O
 Please cite our paper as follows if you found this repository useful:
 
 ```
-@inproceedings{
-surana2023cassi,
-title={{CASSI}: Contextual and Semantic Structure-based Interpolation Augmentation for Low-Resource {NER}},
-author={Surana, Tanmay and Nga, Ho Thi and Tun, Kyaw Zin and Chng, Eng Siong},
-booktitle={Findings of the Association for Computational Linguistics: EMNLP 2023},
-year={2023},
-url={https://openreview.net/forum?id=OwxjgsX68V}
+@inproceedings{surana-etal-2023-cassi,
+    title = "{CASSI}: Contextual and Semantic Structure-based Interpolation Augmentation for Low-Resource {NER}",
+    author = "Surana, Tanmay  and
+      Ho, Thi-Nga  and
+      Tun, Kyaw  and
+      Chng, Eng Siong",
+    editor = "Bouamor, Houda  and
+      Pino, Juan  and
+      Bali, Kalika",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2023",
+    month = dec,
+    year = "2023",
+    address = "Singapore",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.findings-emnlp.651",
+    pages = "9729--9742",
+    abstract = "While text augmentation methods have been successful in improving performance in the low-resource setting, they suffer from annotation corruption for a token-level task like NER. Moreover, existing methods cannot reliably add context diversity to the dataset, which has been shown to be crucial for low-resource NER. In this work, we propose Contextual and Semantic Structure-based Interpolation (CASSI), a novel augmentation scheme that generates high-quality contextually diverse augmentations while avoiding annotation corruption by structurally combining a pair of semantically similar sentences to generate a new sentence while maintaining semantic correctness and fluency. To accomplish this, we generate candidate augmentations by performing multiple dependency parsing-based exchanges in a pair of semantically similar sentences that are filtered via scoring with a pretrained Masked Language Model and a metric to promote specificity. Experiments show that CASSI consistently outperforms existing methods at multiple low resource levels, in multiple languages, and for noisy and clean text.",
 }
 ```
