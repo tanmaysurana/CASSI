@@ -1,6 +1,6 @@
 # CASSI: Contextual and Semantic Structure-based Interpolation
 
-This is the code for our paper "CASSI: Contextual and Semantic Structure-based Interpolation Augmentation for Low-Resource NER" accepted in EMNLP 2023 (Findings).
+This is the code for our [paper](https://aclanthology.org/2023.findings-emnlp.651/) "CASSI: Contextual and Semantic Structure-based Interpolation Augmentation for Low-Resource NER" published in EMNLP 2023 (Findings).
 
 ## Dependencies
 
